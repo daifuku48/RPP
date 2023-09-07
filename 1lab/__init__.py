@@ -4,30 +4,40 @@ import uuid
 
 
 class User:
-    def __init__(self, name, email, position):
+    def __init__(self, name, password, position):
         self.id = str(uuid.uuid4())  # Генерируем уникальный id
         self.name = name
-        self.email = email
+        self.password = password
         self.position = position
 
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
-            'email': self.email,
+            'password': self.password,
             'position': self.position
         }
 
     def register(self):
-        customer_data = self.to_dict()
-        with open('users.json', 'a') as file:
-            json.dump(customer_data, file)
-            file.write('\n')
+        try:
+            with open('users.json', 'r') as file:
+                user_data = json.load(file)
+        except Exception:
+            # Если файл не найден, создаем пустой список
+            user_data = []
+
+        # Добавляем нового пользователя в список
+        user_data.append(self.to_dict())
+
+        # Записываем обновленный список в файл
+        with open('users.json', 'w') as file:
+            json.dump(user_data, file, ensure_ascii=False, indent=4)
 
 
 class Service:
-    def __init__(self, name_service, period_access, geographic_zone):
+    def __init__(self, userId, name_service, period_access, geographic_zone):
         self.id = str(uuid.uuid4())
+        self.userId = userId
         self.name_service = name_service
         self.period_access = period_access
         self.geographic_zone = geographic_zone
@@ -41,18 +51,23 @@ class Service:
         }
 
     def add_service(self):
-        service_data = self.to_dict()
-        with open('services.json', 'a') as file:
-            json.dump(service_data, file)
-            file.write('\n')
+        try:
+            with open('services.json', 'r') as file:
+                service_data = json.load(file)
+        except Exception:
+            # Если файл не найден, создаем пустой список
+            service_data = []
+
+        # Добавляем нового пользователя в список
+        service_data.append(self.to_dict())
+
+        # Записываем обновленный список в файл
+        with open('services.json', 'w') as file:
+            json.dump(service_data, file, ensure_ascii=False, indent=4)
 
 
 class App:
     def __init__(self, root):
-        self.email_entry = None
-        self.name_entry = None
-        self.password_entry = None
-        self.login_entry = None
         # Переменная для хранения выбора пользователя
         self.position_var = tk.StringVar(value="Користувач")
         self.root = root
@@ -68,9 +83,9 @@ class App:
             widget.destroy()
 
         # Создаем и центрируем элементы с помощью grid
-        name_label = tk.Label(self.root, text="Ваше ім'я:")
+        name_label = tk.Label(self.root, text="Ваше ім'я(логін):")
         self.name_entry = tk.Entry(self.root)
-        email_label = tk.Label(self.root, text="Ваш email:")
+        email_label = tk.Label(self.root, text="Ваш пароль:")
         self.email_entry = tk.Entry(self.root)
 
         # Создаем радиокнопки для выбора позиции
@@ -102,17 +117,20 @@ class App:
 
     def register_user(self):
         name = self.name_entry.get()
-        email = self.email_entry.get()
+        password = self.email_entry.get()
         position = self.position_var.get()  # Получаем выбранное значение позиции
 
-        if name and email and position:
+        if name and password and position:
             self.registration_data['name'] = name
-            self.registration_data['email'] = email
+            self.registration_data['email'] = password
             self.registration_data['position'] = position
 
-            new_user = User(name, email, position)
+            new_user = User(name, password, position)
             new_user.register()
-            self.login()
+            if new_user.position == "Замовник":
+                self.create_customer_window()
+            else:
+                self.create_service_provider_window()
         else:
             print("Заповніть усі поля.")
 
@@ -123,16 +141,16 @@ class App:
 
         # Создаем и центрируем элементы с помощью grid
         login_label = tk.Label(self.root, text="Логін:")
-        login_entry = tk.Entry(self.root)
+        self.login_entry = tk.Entry(self.root)
         password_label = tk.Label(self.root, text="Пароль:")
-        password_entry = tk.Entry(self.root, show="*")
+        self.password_entry = tk.Entry(self.root, show="*")
         login_button = tk.Button(self.root, text="Увійти", command=self.login)
         register_button = tk.Button(self.root, text="Зареєструватися", command=self.create_registration_screen)
 
         login_label.grid(row=0, column=0, padx=5, pady=5, sticky="e")
-        login_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.login_entry.grid(row=0, column=1, padx=5, pady=5)
         password_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
-        password_entry.grid(row=1, column=1, padx=10, pady=5)
+        self.password_entry.grid(row=1, column=1, padx=10, pady=5)
         login_button.grid(row=2, column=0, columnspan=2, pady=5)
         register_button.grid(row=3, column=0, columnspan=2)
 
@@ -153,11 +171,12 @@ class App:
             users_data = json.load(file)
         user_found = False
         for user_data in users_data:
-            if user_data['login'] == login and user_data['password'] == password:
+            if user_data['name'] == login and user_data['password'] == password:
                 user_found = True
                 user_type = user_data['position']
+                self.registration_data['name'] = user_data['name']
+                self.registration_data['email'] = user_data['email']
                 break
-
         if user_found:
             if user_type == "Замовник":
                 self.create_customer_window()
@@ -165,25 +184,6 @@ class App:
                 self.create_service_provider_window()
         else:
             print("Неправильний логін або пароль.")
-        if self.position_var.get() == "Користувач":
-            self.create_service_provider_window()
-        else:
-            self.create_customer_window()
-
-    def add_service(self):
-        service_name = self.service_name_entry.get()
-        period_access = self.period_access_entry.get()
-        geographic_zone = self.geographic_zone_entry.get()
-
-        if service_name and period_access and geographic_zone:
-            new_service = Service(service_name, period_access, geographic_zone)
-            new_service.add_service()
-            self.service_name_entry.delete(0, tk.END)
-            self.period_access_entry.delete(0, tk.END)
-            self.geographic_zone_entry.delete(0, tk.END)
-            print("Послуга додана успішно.")
-        else:
-            print("Заповніть усі поля.")
 
     def create_customer_window(self):
         # Создание окна замовника
@@ -208,6 +208,44 @@ class App:
         self.geographic_zone_entry.pack()
 
         tk.Button(self.root, text="Додати послугу", command=self.add_service).pack()
+
+        # Create a Listbox widget
+        self.service_listbox = tk.Listbox(self.root)
+        self.service_listbox.pack()
+
+        # Populate the Listbox with existing services
+        self.populate_service_listbox()
+
+    def populate_service_listbox(self):
+        # You need to read the existing services from 'services.json' and add them to the Listbox
+        try:
+            with open('services.json', 'r') as file:
+                services_data = json.load(file)
+                for service_data in services_data:
+                    service_name = service_data['name_service']
+                    self.service_listbox.insert(tk.END, service_name)
+        except FileNotFoundError:
+            print("Services file not found.")
+
+    def add_service(self):
+        name = self.name_entry.get()
+        service_name = self.service_name_entry.get()
+        period_access = self.period_access_entry.get()
+        geographic_zone = self.geographic_zone_entry.get()
+
+        if service_name and period_access and geographic_zone:
+            new_service = Service(name, service_name, period_access, geographic_zone)
+            new_service.add_service()
+            self.service_name_entry.delete(0, tk.END)
+            self.period_access_entry.delete(0, tk.END)
+            self.geographic_zone_entry.delete(0, tk.END)
+            print("Послуга додана успішно.")
+
+            # Update the Listbox with the new service
+            self.service_listbox.insert(tk.END, service_name)
+            new_service.add_service()
+        else:
+            print("Заповніть усі поля.")
 
 
 if __name__ == "__main__":
