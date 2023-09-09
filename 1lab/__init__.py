@@ -240,7 +240,6 @@ class App:
             self.period_access_entry.delete(0, tk.END)
             self.geographic_zone_entry.delete(0, tk.END)
             print("Послуга додана успішно.")
-юююю
             # Update the Listbox with the new service
             self.service_listbox.insert(tk.END, service_name)
             new_service.add_service()
