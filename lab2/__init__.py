@@ -1,6 +1,6 @@
 from scipy.optimize import minimize
 import numpy as np
-import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 
 # Визначення функції
@@ -19,25 +19,25 @@ z_optimal = result.fun
 print(f"Значення глобального екстремуму z = {z_optimal}")
 print(f"x_optimal = {x_optimal}, y_optimal = {y_optimal}")
 
-# Определение функции
-def f(x, y):
-    return 3 * x**2 + x * y - 2 * y**2 - x - 4 * y
+# Введені дані
+x_data = np.array([0.5, 1.0, 1.5, 2.0, 2.5])
+y_data = np.array([0.541, 0.398, 0.232, 0.106, 0.052])
 
-# Создание значений x и y
-x = np.linspace(-10, 10, 400)
-y = np.linspace(-10, 10, 400)
+# Задайте функцію f(x), яку ви хочете підігнати під дані
+def f(x, a, b):
+    return a * x * np.exp(b * x)
 
-# Создание сетки значений x и y
-X, Y = np.meshgrid(x, y)
+# Використовуйте curve_fit для підбору коефіцієнтів a і b
+params, covariance = curve_fit(f, x_data, y_data)
 
-# Вычисление значений функции на сетке
-Z = f(X, Y)
+# Отримайте значення коефіцієнтів a і b
+a, b = params
 
-# Построение графика функции с линиями
-plt.figure(figsize=(8, 6))
-plt.contour(X, Y, Z, levels=15, colors='k')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.title('График функции f(x, y) с линиями')
-plt.grid(True)
-plt.show()
+print(f"Коефіцієнт a: {a}")
+print(f"Коефіцієнт b: {b}")
+
+# Обчисліть стандартне відхилення
+residuals = y_data - f(x_data, a, b)
+std_deviation = np.std(residuals)
+
+print(f"Стандартне відхилення: {std_deviation}")
