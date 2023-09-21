@@ -234,9 +234,9 @@ class App:
         self.service_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=80)
         self.service_listbox.pack()
 
-        tk.Button(self.root, text="Process Selected Service", command=self.process_selected_service).pack()
+        tk.Button(self.root, text="Select Service", command=self.process_selected_service).pack()
 
-        self.root.geometry("800x800")
+        self.root.geometry("500x500")
 
         self.service_listbox.bind('<<ListboxSelect>>', self.on_service_selection)
 
